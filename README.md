@@ -17,6 +17,9 @@ eine eigene Paxos Implementation haben oder ist es besser dem ensemble zu folgen
 [^3]: <https://github.com/Nekso/nkbase>
 
 
+Wichtig im SCG: C, TPOSS-PCS: c, CCS: C, MAR: AP
+
+
 Paxos
 =====
 
@@ -82,19 +85,28 @@ Installation
     Testing tp.dike: *** FAILED {dike_SUITE,init_per_suite} ***
     Testing tp.dike: TEST COMPLETE, 0 ok, 0 failed, 6 skipped of 6 test cases
 
-**TODO:** nochmal, weil sich der Code inzwischen geändert hat.
+nochmal versucht, weil sich der Code inzwischen geändert hat -> nicht hinbekommen, evtl. wegen tetrapak.
+
+> Ich versuche gerade den Dike-Test (beschrieben auf der Github-Seite) durchzuführen, aber ich bekomme das nicht hin.
+> Ich vermute, dass das Problem bei Tetrapak liegt:
+>     > tetrapak test
+>     //usr/local/lib/erlang/bin/tetrapak: line 10: cd: ../lib/tetrapak-0.4.26/bin/../ebin: No such file or directory 
+> das Verzeichnis //usr/local/lib/erlang/lib/tetrapak-0.4.26/ebin/ gibt es schon, allerdings kann ich nicht nachvollziehen, was genau das tetrapak script macht, das den Pfad erzeugt (aufgrund mangelnder Erfahrung/Kenntnisse).
+> Mache ich einen offensichtlichen Fehler? Ist die Anleitung unvollständig? Braucht das Script irgendwelche Parameter, die ich nicht gesetzt habe?
+
 
 ### Pro:
 
--   Spezifische Lösung
--   Simple Implementation, nicht optimiert (S.31)
--   Hashring?
+- Spezifische Lösung
+- Simple Implementation, nicht optimiert (S.31)
+- Hashring?
 
 ### Con:
 
--   Master? Oder ist das nur die Benennung
--   Kein Multi-Paxos (S.72)
--   Kein Hot-Code-Swapping (S.72)
+- Master? Oder ist das nur die Benennung
+- Kein Multi-Paxos (S.72)
+- Kein Hot-Code-Swapping (S.72)
+- Test geht nicht.
 
 
 Riak ENSEMBLE
@@ -135,14 +147,191 @@ Deps (91MB): Riak-core(Basho), Riak-dt(Basho), Cluster-info(Basho), Sext(Uwiger)
 
 Setzt auf Riak-Core auf. No Master
 
+Installation und Test
+---------------------
+
+    https://github.com/Nekso/nkbase.git nach Anleitung geht einwandfrei.
+
+### Test
+
+- Vorher
+
+        RAM 45 45 45 45 45 MB
+        log 12KB
+        Ordner 47 47 5 5 47 MB
+
+- 2 Mio Datensätze (133B) der Form:
+
+        {{name,"horst1000000"},
+        {number,1000000},
+        {street,"1000000street"},
+        {city,"city2000000"},
+        {country,"1000000th country"},
+        {value,119000000}}
+
+  Code
+
+        sx(0) -> ok;
+        sx(N) -> nkbase:put(domain, class, integer_to_list(N), entry(N)), sx(N-1).
+        entry(N) -> {
+        {name,"horst"++integer_to_list(N)},
+        {number,N},
+        {street,integer_to_list(N)++"street"},
+        {city,"city"++integer_to_list(N*2)},
+        {country,integer_to_list(N)++"th country"},
+        {value,N*119}
+        }.
+
+- Laufzeit 23 Min. (CPU-Zeit 6-14 Min pro Prozess)
+
+- Nachher
+
+        RAM     76 380 75 370 385 MB
+        RamKomp 19  22 13  20  20 MB
+        log 12KB
+        Ordner 190 135 135 68 68 MB
+        nach einer weile:
+        Ordner 400 220 290 95 95 MB
+        
+        NetzTraffic 1000 400 375 320 135 MB gesendet
+                     270 570 580 570 260 MB empfangen
+
+- Wenn ein Knoten ausfällt ist das kein Ding.
+- Zwei auch nicht.
+- 3 von 5 abgeschossen, jetzt können Werte nicht geschrieben werden. Wurde erst repariert, als wieder 4 on waren.
+- Wenn Knoten ausgefallen waren und wieder on kommen, werden die Daten repariert. Die Daten von Platte sind sofort da, die von anderen Knoten werden angefordert/repariert.
+- Test: bei 2 knoten X,Y mit X schreiben, X abschießen, Z starten. daten sind da.
+- Interessant wäre ein split test. vielleicht später...
+
+
 ### Pro:
 
--   Installation und Test problemlos.
+- Installation und Test problemlos.
+- Starten, einfaches Konfigurieren, Put und Get sind leicht zu bedienen. 
 
-### Con:
 
--   Sicherheit? (wegen dezentralität)
--   Produziert massiv Log-Daten (Kann man die ausschalten? Sind die nützlich -> Pro?)
+Mnesia
+======
+
+<http://www.erlang.org/doc/man/mnesia.html> Mnesia Doc
+
+<http://www.doc.ic.ac.uk/~rn710/Installs/otp_src_17.0/lib/mnesia/test/mnesia_majority_test.erl> Mnesia Majority Test -> TODO Testen
+
+<https://de.wikipedia.org/wiki/Mnesia> Wikipedia übersicht (repariert)
+
+<http://learnyousomeerlang.com/mnesia> Gute Einführung: 
+*"If we refer to the CAP theorem, Mnesia sits on the CP side, rather than the AP side, meaning that it won't do eventual consistency, will react rather badly to netsplits in some cases, but will give you strong consistency guarantees if you expect the network to be reliable (and you sometimes shouldn't)."*
+
+<http://stackoverflow.com/questions/787755/how-to-add-a-node-to-an-mnesia-cluster>
+
+Irgendwer schrieb, dass Mnesia eher für etwa 10 Knoten gut geht -> nachsehen, warum.
+
+Leere DB: ca 20kb
+
+Test
+----
+
+- Vorher
+
+        RAM je ~30MB (vorher mal 20MB)
+        mit disc_copies:
+        test:put(10000).
+          führt auf anderen Knoten zu 
+        =ERROR REPORT==== 3-Sep-2015::09:46:36 ===
+        Mnesia('n1@roots-MacBook-Pro'): ** WARNING ** Mnesia is overloaded: {dump_log,write_threshold}
+
+Erklärung dazu auf <http://streamhacker.com/2008/12/10/how-to-eliminate-mnesia-overload-events/>
+also gehts weiter mit ram_copies.
+
+- schreib test
+
+        Start 10:05 Ende 10:24 -> Laufzeit 19 Min
+
+- ca 100K Datensätze/Min
+
+        RAM       90M 1.9G 1.9G 1.9G 1.9G
+        RAM komp. 70M 1.6G 1.6G 1.6G 1.6G
+        Platte 8KB (TODO auch mit Platte testen)
+        Netztraffic 2.8G 200M 200M 200M 200M gesendet
+                    820M 720M 720M 720M 720M empfangen
+        Pakete: pro datensatz: 3 hin, 2 zurück
+
+- Knoten abgeschossen, wieder verbunden -> sofort 1.7G RAM (teilen die sich vllt speicher?) Netsplit auf verschiedenen Rechnern testen.
+- Sowohl Haupt als auch Nebenknoten können abgeschossen und problemlos wieder verbunden werden.
+- Schreiben + Lesen geht auch, wenn alle anderen Knoten weg sind. -> **Netsplit könnte hässlich werden.** (TODO)
+- Daten können von X gelesen werden, wenn sie in Abwesenheit von X geschrieben wurden.
+- Wenn alle Knoten aus sind, sind die Daten weg :)
+
+Pro
+---
+
+- Erlang out of the box
+
+
+CloudI.org
+==========
+
+50-100 Machines in LAN
+
+<http://cloudi.org/faq.html#1_Messaging>
+<https://github.com/okeuday/cpg>
+
+CloudI vs Nekso
+---------------
+
+CloudI is focused on LAN usage of a smallish cluster (50-100 machines, limited by distributed Erlang communication, focusing on fault-tolerance which requires the low latency on LANs) for supporting the execution of services (microservices, potentially long-running source code where service execution is 1 or more thread of execution, not processing data as batch task processing (i.e., not job processing) but instead soft-realtime event processing of message flows (service requests and their associate response, if a response is provided)) which may be implemented in any programming language (so bringing fault-tolerance into any non-Erlang programming language using concepts found in Erlang, but made generic with extra features for efficient fault-tolerance and scalability).
+
+Nekso (nkcore, nkcluster, etc.) is focused on both LAN and WAN usage with execution of jobs (batch processing of data), but without explicitly focusing on fault-tolerance features (i.e., fault-tolerance constraints: timeouts that are enforced with message flows, max_r/max_t restarts of processing, transaction processing).
+
+Nekso is using riak_core which attempts to provide globally consistent
+state while CloudI uses cpg.  The cpg usage in CloudI is not focused on
+consistency, but instead on partition tolerance and availability, due to
+needing fault-tolerant service naming, so a service dies... its name
+disappears, lookups still see the name with other instances of the same
+service or perhaps a different implementation of the same service, so
+the service request is still handled after the death of 1 or more
+services.  CloudI execution is not focused on consistency, since it is
+providing RESTful development where the only state storage is for
+caching, the rest is transaction processing of critical transactions
+which must scale and be fault-tolerant.
+
+The fact Nekso is attempting to pursue WAN processing is interesting,
+but I don't see the same level of focus on WAN fault-tolerance that I
+have seen in Linux-HA, and with the Kademlia distributed hash table
+algorithm.  While it would be nice if there was overlap with Nekso and
+CloudI to create more development together, the focuses due appear to be
+separate purposes that do not overlap.  I think Nekso could utilize
+CloudI for some of what they are doing, but they may not have seen a
+need to do so at this time. Either way, I am not attempting to prevent
+them from contributing to CloudI at all, I just believe that they are
+pursuing a different set of requirements with the Nekso source code.
+
+
+If you are doing Erlang-only development, you could use the separate CloudI repositories to manage everything
+as rebar or hex dependencies (i.e., use the repository <https://github.com/CloudI/cloudi_core/> or the
+hex package at <https://hex.pm/packages/cloudi_core>).
+
+The example at <https://github.com/CloudI/CloudI/tree/develop/examples/hello_world5> shows how source code can be structured for this approach.
+
+Installation
+------------
+<http://cloudi.org/faq.html#3_Overview> und 
+<http://cloudi.org/index.html> Abhängigkeiten in *configure* brauchen aufm Mac gerade zu lange. (<https://www.macports.org/install.php>)
+
+<https://github.com/CloudI/CloudI> Viele Abhängigkeiten, einige lassen sich nicht fehlerfrei installieren. (gmp, boost)
+
+examples wie <https://github.com/CloudI/CloudI/tree/develop/examples/hello_world5> unklare Anweisungen, funktioniert nicht.
+
+Pro
+---
+
+- schneller Kontakt zu Entwicklern
+
+Con
+---
+
+- geht nicht auf Anhieb
+- viele Abhängigkeiten
 
 
 Alternativen
@@ -156,7 +345,9 @@ Einfacher als Paxos, weil aufgeteilt, Leader mit Heartbeat.
 
 <http://en.wikipedia.org/wiki/Raft_(computer_science)>
 
-Implementationen:
+Demo <https://raft.github.io>
+
+### Implementationen
 
 -   <https://github.com/andrewjstone/rafter>
     Wird nicht aktiv supportet!
@@ -208,11 +399,13 @@ Vergleich
 |Name         |   Deps    | Test  |  Stil |  Mem. |  Master |  Log  | Heartbeat | Community |    Optimierungen   |
 |:------------|----------:|:-----:|:-----:|:-----:|:-------:|:-----:|:---------:|:---------:|:------------------:|
 |DIKE         |**3,5MB**  | fail  |   ?   |   ?   |  vert.  |   ?   |     -     |    TP     |       ?            |
-|RIAK-Ensemble|   43MB    | TODO  |   ?   |   ?   |    ?    |   ?   |     -     | **Groß**  |                    |
-|NkBase       | **91MB**  | super |  gut  |   ?   |    -    |  Viel |     -     |    ?      |                    |
+|RIAK-Ensemble|   43MB    | TODO  |   ?   |   ?   |    ?    |   ?   |     -     |   Groß    |                    |
+|NkBase       | **91MB**  |**top**|  gut  | 45+MB |  kein   |normal |   nein    |    ?      |                    |
+|CoudI.org    |   viele   |       | nett  |       |         |       |           |           |                    |
+|Mnesia       |    0B     | joa   |  gut  |  erl  |    ?    | kaum  |   nein?   |   erl     |                    |
 |ZRaft        |   12MB    | geht  |   ?   |   ?   |    ?    |   ?   |    ja     |    ?      |                    |
 |ZooKeeper    |           |       |       |       |         |       |           |           |                    |
-|Menicus      |     -     |   -   |   -   |   -   | rotiert |   -   |   nein    |   keine   | WAN und Scalability|
+|(Menicus)    |     -     |   -   |   -   |   -   | rotiert |   -   |   nein    |   keine   | WAN und Scalability|
 
 
 Papers
@@ -255,6 +448,7 @@ Akronyme
 
 Sollte ich mal ansehen
 ----------------------
+
 -   OpenStack
 -   OpenNF
 -   OpenFlow
@@ -272,10 +466,7 @@ Fragen
 -   Wie wichtig ist *wenig Speicherbedarf*? -> Riak-Core braucht Speicher, Logs brauchen Speicher...
     Falls Speicher nicht so wichtig ist, oder Logs abgeschaltet werden können: NKBase ist Cool.
 -   Ist ein *Heartbeat* eine Option? -> Raft arbeitet mit einem Heartbeat.
--   Um wieviele Knoten geht es hier?
 -   Wieviele Daten/Anfragen sollen verarbeitet werden? Wenig -> eigener Paxos; Viel -> optimierungen Interessant
--   Sollte die *Netzstruktur* berücksichtigt werden? -> Z.B. Leader in der Mitte oder keinen Leader.
-    Menicus wäre hier interessant, könnte vllt. auch in bestehende Paxos-Implementationen eingebracht werden.
 
 
 Erlang
@@ -294,3 +485,9 @@ Markdown
 
 -   <https://help.github.com/articles/github-flavored-markdown/>
 -   <https://help.github.com/articles/writing-on-github/>
+
+
+Git
+===
+
+<http://rogerdudler.github.io/git-guide/> Schnelle Anleitung
