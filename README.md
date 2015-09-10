@@ -377,7 +377,7 @@ Vergleich
 
 |Name         |   Deps    | Test  |  Stil |  Mem. |  Master |  Log  | Heartbeat | Community |    Optimierungen   |
 |:------------|----------:|:-----:|:-----:|:-----:|:-------:|:-----:|:---------:|:---------:|:------------------:|
-|DIKE         |**3,5MB**  | fail  |   ?   |   ?   |  vert.  |   ?   |     -     |    TP     |       ?            |
+|DIKE         |**3,5MB**  | geht  |   ?   |   ?   |  vert.  |   ?   |     -     |    TP     |       ?            |
 |RIAK-Ensemble|   43MB    | TODO  |   ?   |   ?   |    ?    |   ?   |     -     |   Groß    |                    |
 |NkBase       | **91MB**  |**top**|  gut  | 45+MB |  kein   |normal |   nein    |    ?      |                    |
 |CoudI.org    |   viele   |       | nett  |       |         |       |           |           |                    |
