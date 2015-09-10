@@ -2,20 +2,25 @@ Notizen
 =======
 
 Hier sammle ich Notizen zur Wahl einer geegneten Implementation von Paxos o.ä.
+Ich habe einige Implementationen schnell gestestet, dabei ging es vor allem um Machbarkeit (Doku intakt?), Speichereffizienz, Geschwindigkeit und Robustheit.
 
 
 Aufgabe
 =======
 
-In der Anlage die Masterarbeit von Ole Rixmann bzgl. der Paxos Implmentation DIKE[^1] welche mit der Naxos Implementation von basho ENSEMBLE[^2] verglichen werden sollte. Die Frage stellt sich, müssen wir
-eine eigene Paxos Implementation haben oder ist es besser dem ensemble zu folgen. Darüber hinaus finde ich bei dem Thema auch noch nkbase[^3] interessant.
+In der Anlage die Masterarbeit von Ole Rixmann bzgl. der Paxos Implmentation [DIKE] welche mit der Paxos Implementation von basho [ENSEMBLE] verglichen werden sollte. Die Frage stellt sich, müssen wir
+eine eigene Paxos Implementation haben oder ist es besser dem ensemble zu folgen. Darüber hinaus finde ich bei dem Thema auch noch [nkbase] interessant.
+(Nachträglich kamen auch noch [CloudI] und [Mnesia] ins Gespräch.)
 
-[^1]: <https://github.com/travelping/dike>
+[DIKE]: <https://github.com/travelping/dike>
 
-[^2]: <https://github.com/basho/riak_ensemble>
+[ENSEMBLE]: <https://github.com/basho/riak_ensemble>
 
-[^3]: <https://github.com/Nekso/nkbase>
+[nkbase]: <https://github.com/Nekso/nkbase>
 
+[CloudI]: <http://cloudi.org>
+
+[Mnesia]: <https://de.wikipedia.org/wiki/Mnesia>
 
 Wichtig im SCG: C, TPOSS-PCS: c, CCS: C, MAR: AP
 
@@ -41,7 +46,7 @@ DIKE
 
 Master: verteilt auf 5 Knoten
 
-Ist der Hashring Teil von Dike? (S.31) -> Im Code gibt es einen Hashring.
+Ist der Hashring Teil von Dike? (Oles Diplomarbeit, S.31) -> Im Code gibt es einen Hashring.
 
 Deps: Lager(Basho), Regine(Travelping)
 
@@ -85,12 +90,15 @@ Installation
     Testing tp.dike: *** FAILED {dike_SUITE,init_per_suite} ***
     Testing tp.dike: TEST COMPLETE, 0 ok, 0 failed, 6 skipped of 6 test cases
 
-nochmal versucht, weil sich der Code inzwischen geändert hat -> nicht hinbekommen, evtl. wegen tetrapak.
+nochmal versucht (Sept15), weil sich der Code inzwischen geändert hat -> nicht hinbekommen, evtl. wegen tetrapak, das wird wohl nicht mehr genutzt.
 
+Mail an Ole:
 > Ich versuche gerade den Dike-Test (beschrieben auf der Github-Seite) durchzuführen, aber ich bekomme das nicht hin.
 > Ich vermute, dass das Problem bei Tetrapak liegt:
->     > tetrapak test
->     //usr/local/lib/erlang/bin/tetrapak: line 10: cd: ../lib/tetrapak-0.4.26/bin/../ebin: No such file or directory 
+
+    > tetrapak test
+    //usr/local/lib/erlang/bin/tetrapak: line 10: cd: ../lib/tetrapak-0.4.26/bin/../ebin: No such file or directory
+ 
 > das Verzeichnis //usr/local/lib/erlang/lib/tetrapak-0.4.26/ebin/ gibt es schon, allerdings kann ich nicht nachvollziehen, was genau das tetrapak script macht, das den Pfad erzeugt (aufgrund mangelnder Erfahrung/Kenntnisse).
 > Mache ich einen offensichtlichen Fehler? Ist die Anleitung unvollständig? Braucht das Script irgendwelche Parameter, die ich nicht gesetzt habe?
 
@@ -98,15 +106,16 @@ nochmal versucht, weil sich der Code inzwischen geändert hat -> nicht hinbekomm
 ### Pro:
 
 - Spezifische Lösung
+- Schon im Einsatz
 - Simple Implementation, nicht optimiert (S.31)
 - Hashring?
 
 ### Con:
 
-- Master? Oder ist das nur die Benennung
+- Master? Oder ist das nur die Benennung?
 - Kein Multi-Paxos (S.72)
 - Kein Hot-Code-Swapping (S.72)
-- Test geht nicht.
+- Test geht nicht / Doku unpassend
 
 
 Riak ENSEMBLE
@@ -152,15 +161,15 @@ Installation und Test
 
     https://github.com/Nekso/nkbase.git nach Anleitung geht einwandfrei.
 
-### Test
+### Test auf 5 Knoten
 
 - Vorher
 
         RAM 45 45 45 45 45 MB
         log 12KB
-        Ordner 47 47 5 5 47 MB
+        HDD-Ordner 47 47 5 5 47 MB
 
-- 2 Mio Datensätze (133B) der Form:
+- Schreibe 2 Mio Datensätze (133B) der Form:
 
         {{name,"horst1000000"},
         {number,1000000},
@@ -201,7 +210,7 @@ Installation und Test
 - 3 von 5 abgeschossen, jetzt können Werte nicht geschrieben werden. Wurde erst repariert, als wieder 4 on waren.
 - Wenn Knoten ausgefallen waren und wieder on kommen, werden die Daten repariert. Die Daten von Platte sind sofort da, die von anderen Knoten werden angefordert/repariert.
 - Test: bei 2 knoten X,Y mit X schreiben, X abschießen, Z starten. daten sind da.
-- Interessant wäre ein split test. vielleicht später...
+- Interessant wäre ein netsplit test. vielleicht später... (Szenario zB. 3/2 split, auf die 3 schreiben, davon 2 abschießen, netz wieder zusammenfügen (1 mit neuer info, 2 mit altem stand) schauen, welcher Stand propagiert wird.)
 
 
 ### Pro:
@@ -213,7 +222,7 @@ Installation und Test
 Mnesia
 ======
 
-<http://www.erlang.org/doc/man/mnesia.html> Mnesia Doc
+[Mnesia Doc](http://www.erlang.org/doc/man/mnesia.html)
 
 <http://www.doc.ic.ac.uk/~rn710/Installs/otp_src_17.0/lib/mnesia/test/mnesia_majority_test.erl> Mnesia Majority Test -> TODO Testen
 
@@ -228,7 +237,7 @@ Irgendwer schrieb, dass Mnesia eher für etwa 10 Knoten gut geht -> nachsehen, w
 
 Leere DB: ca 20kb
 
-Test
+Test mit 5 Knoten
 ----
 
 - Vorher
@@ -243,7 +252,7 @@ Test
 Erklärung dazu auf <http://streamhacker.com/2008/12/10/how-to-eliminate-mnesia-overload-events/>
 also gehts weiter mit ram_copies.
 
-- schreib test
+- schreib test 2.000.000 x ca. 100 B
 
         Start 10:05 Ende 10:24 -> Laufzeit 19 Min
 
@@ -267,6 +276,11 @@ Pro
 
 - Erlang out of the box
 
+Con
+---
+
+- Netsplit wird hässlich 
+
 
 CloudI.org
 ==========
@@ -283,28 +297,9 @@ CloudI is focused on LAN usage of a smallish cluster (50-100 machines, limited b
 
 Nekso (nkcore, nkcluster, etc.) is focused on both LAN and WAN usage with execution of jobs (batch processing of data), but without explicitly focusing on fault-tolerance features (i.e., fault-tolerance constraints: timeouts that are enforced with message flows, max_r/max_t restarts of processing, transaction processing).
 
-Nekso is using riak_core which attempts to provide globally consistent
-state while CloudI uses cpg.  The cpg usage in CloudI is not focused on
-consistency, but instead on partition tolerance and availability, due to
-needing fault-tolerant service naming, so a service dies... its name
-disappears, lookups still see the name with other instances of the same
-service or perhaps a different implementation of the same service, so
-the service request is still handled after the death of 1 or more
-services.  CloudI execution is not focused on consistency, since it is
-providing RESTful development where the only state storage is for
-caching, the rest is transaction processing of critical transactions
-which must scale and be fault-tolerant.
+Nekso is using riak_core which attempts to provide globally consistent state while CloudI uses cpg.  The cpg usage in CloudI is not focused on consistency, but instead on partition tolerance and availability, due to needing fault-tolerant service naming, so a service dies... its name disappears, lookups still see the name with other instances of the same service or perhaps a different implementation of the same service, so the service request is still handled after the death of 1 or more services.  CloudI execution is not focused on consistency, since it is providing RESTful development where the only state storage is for caching, the rest is transaction processing of critical transactions which must scale and be fault-tolerant.
 
-The fact Nekso is attempting to pursue WAN processing is interesting,
-but I don't see the same level of focus on WAN fault-tolerance that I
-have seen in Linux-HA, and with the Kademlia distributed hash table
-algorithm.  While it would be nice if there was overlap with Nekso and
-CloudI to create more development together, the focuses due appear to be
-separate purposes that do not overlap.  I think Nekso could utilize
-CloudI for some of what they are doing, but they may not have seen a
-need to do so at this time. Either way, I am not attempting to prevent
-them from contributing to CloudI at all, I just believe that they are
-pursuing a different set of requirements with the Nekso source code.
+The fact Nekso is attempting to pursue WAN processing is interesting, but I don't see the same level of focus on WAN fault-tolerance that I have seen in Linux-HA, and with the Kademlia distributed hash table algorithm.  While it would be nice if there was overlap with Nekso and CloudI to create more development together, the focuses due appear to be separate purposes that do not overlap.  I think Nekso could utilize CloudI for some of what they are doing, but they may not have seen a need to do so at this time. Either way, I am not attempting to prevent them from contributing to CloudI at all, I just believe that they are pursuing a different set of requirements with the Nekso source code.
 
 
 If you are doing Erlang-only development, you could use the separate CloudI repositories to manage everything
@@ -322,10 +317,12 @@ Installation
 
 examples wie <https://github.com/CloudI/CloudI/tree/develop/examples/hello_world5> unklare Anweisungen, funktioniert nicht.
 
+Aus Zeitgründen abgebrochen.
+
 Pro
 ---
 
-- schneller Kontakt zu Entwicklern
+- schneller Kontakt zu Entwicklern (nicht selbst getestet)
 
 Con
 ---
@@ -371,7 +368,7 @@ Demo <https://raft.github.io>
 ZooKeeper
 ---------
 
-ZooKeeper Atomic Broadcast@Hunt10 von Yahoo (Riak-Ensemble Vortrag 17:38)
+ZooKeeper Atomic Broadcast@Hunt10 von Yahoo (Riak-Ensemble Vortrag (s.o.) 17:38)
 
 Es gab wohl auch eine riak-zk implementation, habe ich nicht mehr gefunden.
 
@@ -446,27 +443,13 @@ Akronyme
 -   [WTP] Wireless Termination Point
 
 
-Sollte ich mal ansehen
-----------------------
-
--   OpenStack
--   OpenNF
--   OpenFlow
--   OpenDaylight
--   RADIUS
--   Diameter
--   TACACS+
--   Mnesia
-
-
 Fragen
 ======
 
 -   Ist es Absicht, dass viele Github Projekte irgendeinen Fehler mitbringen?
--   Wie wichtig ist *wenig Speicherbedarf*? -> Riak-Core braucht Speicher, Logs brauchen Speicher...
-    Falls Speicher nicht so wichtig ist, oder Logs abgeschaltet werden können: NKBase ist Cool.
+-   Wie wichtig ist *wenig Speicherbedarf*? -> Riak-Core braucht Speicher
+    Falls Speicher nicht so wichtig ist: NKBase ist Cool.
 -   Ist ein *Heartbeat* eine Option? -> Raft arbeitet mit einem Heartbeat.
--   Wieviele Daten/Anfragen sollen verarbeitet werden? Wenig -> eigener Paxos; Viel -> optimierungen Interessant
 
 
 Erlang
@@ -475,19 +458,47 @@ Erlang
 IntelliJ
 --------
 
--   <https://www.jetbrains.com/idea/download/>
--   <https://www.jetbrains.com/idea/download/download_thanks.jsp>
--   <http://ignatov.github.io/intellij-erlang/>
+- <https://www.jetbrains.com/idea/download/>
+- <https://www.jetbrains.com/idea/download/download_thanks.jsp>
+- <http://ignatov.github.io/intellij-erlang/>
 
 
 Markdown
 ========
 
--   <https://help.github.com/articles/github-flavored-markdown/>
--   <https://help.github.com/articles/writing-on-github/>
+- <https://help.github.com/articles/github-flavored-markdown/>
+- <https://help.github.com/articles/writing-on-github/>
 
 
 Git
 ===
 
-<http://rogerdudler.github.io/git-guide/> Schnelle Anleitung
+[Schnelle Anleitung](http://rogerdudler.github.io/git-guide/)
+
+
+TODO
+====
+
+- Diese Datei auf englisch übersetzen?
+- Dike nochmal testen und hier aufnehmen.
+- An Ole und Carmen: Wo hat es mit Dike gehapert (in der Readme), was fehlt mir da?
+- Meine Tests zu Git hochladen
+- Mail an alle in der Runde mit Link zu meinen Tests
+- Netsplit in verschiednen Varianten testen
+- Speicher von Erlang aus messen
+
+
+Sollte ich mal ansehen
+----------------------
+
+- OpenStack
+- OpenNF
+- OpenFlow
+- OpenDaylight
+- RADIUS
+- Diameter
+- TACACS+
+- Cockroach
+- Scalaris
+- Ldub
+
