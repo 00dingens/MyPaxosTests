@@ -463,9 +463,6 @@ TODO
 
 - Diese Datei auf englisch übersetzen?
 - Dike nochmal testen und hier aufnehmen.
-- An Ole und Carmen: Wo hat es mit Dike gehapert (in der Readme), was fehlt mir da?
-- Meine Tests zu Git hochladen
-- Mail an alle in der Runde mit Link zu meinen Tests
 - Netsplit in verschiednen Varianten testen
 - Speicher von Erlang aus messen
 
