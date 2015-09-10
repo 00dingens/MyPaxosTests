@@ -69,38 +69,21 @@ Installation
     dann
     rebar get-deps
     rebar compile
+oder
+    "with mix" nach Anleitung
 
 ### tetrapak:
 
     https://github.com/travelping/tetrapak
-    installieren mit su
+    installieren als su
     export PATH=$PATH://usr/local/lib/erlang/bin/
 
 ### test:
 
-    test/test_SUITE.erl:
-    -compile([{parse_transform, lager_transform}]).
-    ->
-    -compile([{lager_transform, parse_transform}]).
-    tests gehen nicht:
-    - - - - - - - - - - - - - - - - - - - - - - - - - -
-    dike_SUITE:init_per_suite failed
-    Reason: undef
-    - - - - - - - - - - - - - - - - - - - - - - - - - -
-    Testing tp.dike: *** FAILED {dike_SUITE,init_per_suite} ***
-    Testing tp.dike: TEST COMPLETE, 0 ok, 0 failed, 6 skipped of 6 test cases
+    "tetrapak test" gibt nichts aus. Keine Fehler, keine Erfolgsmeldungen.
+    mix ct geht. (TEST COMPLETE, 5 ok, 0 failed, 1 skipped of 6 test cases)
 
-nochmal versucht (Sept15), weil sich der Code inzwischen geändert hat -> nicht hinbekommen, evtl. wegen tetrapak, das wird wohl nicht mehr genutzt.
-
-Mail an Ole:
-> Ich versuche gerade den Dike-Test (beschrieben auf der Github-Seite) durchzuführen, aber ich bekomme das nicht hin.
-> Ich vermute, dass das Problem bei Tetrapak liegt:
-
-    > tetrapak test
-    //usr/local/lib/erlang/bin/tetrapak: line 10: cd: ../lib/tetrapak-0.4.26/bin/../ebin: No such file or directory
- 
-> das Verzeichnis //usr/local/lib/erlang/lib/tetrapak-0.4.26/ebin/ gibt es schon, allerdings kann ich nicht nachvollziehen, was genau das tetrapak script macht, das den Pfad erzeugt (aufgrund mangelnder Erfahrung/Kenntnisse).
-> Mache ich einen offensichtlichen Fehler? Ist die Anleitung unvollständig? Braucht das Script irgendwelche Parameter, die ich nicht gesetzt habe?
+TODO: im Einsatz testen.
 
 
 ### Pro:
@@ -113,9 +96,8 @@ Mail an Ole:
 ### Con:
 
 - Master? Oder ist das nur die Benennung?
-- Kein Multi-Paxos (S.72)
+- Kein Multi-Paxos? (S.72)
 - Kein Hot-Code-Swapping (S.72)
-- Test geht nicht / Doku unpassend
 
 
 Riak ENSEMBLE
